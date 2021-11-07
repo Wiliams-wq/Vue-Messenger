@@ -1,15 +1,38 @@
 import Vue from 'vue'
 import Vuex from 'vuex'
 
+//importacion de modulos
+import messages from "./messages";
+import rooms from "./rooms";
+import user from "./user";
+import utils from "./utils";
+
 Vue.use(Vuex)
 
-export default new Vuex.Store({
+const store = new Vuex.Store({
+  modules: {
+    messages,
+    rooms,
+    user,
+    utils
+  },
+
   state: {
   },
+
+
   mutations: {
   },
+
+
   actions: {
+    //el estado de autenticacion del usuario, para chequear si esta o no logueado
+    checkAuth(){
+
+    },
   },
-  modules: {
-  }
+
 })
+
+export default store;
+store.dispatch("checkAuth");
