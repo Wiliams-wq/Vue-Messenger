@@ -1,13 +1,11 @@
-//se importa fireabse y los servicios que se usan
-import {initializeApp} from "firebase/app";
-//importacion de servicios
-import {getAuth} from "firebase/auth";
-import {getFirestore} from "firebase/firestore";
-import {getStorage} from "firebase/storage"
 
+import firebase from 'firebase/compat/app';
+import 'firebase/compat/auth';
+import 'firebase/compat/firestore';
+import 'firebase/compat/storage'
 
 //datos de la aplicacion dada por firebase
-const firebaseConfig = {
+ const firebaseConfig = {
     apiKey: "AIzaSyDjAEB_MeQ_C6oNO785I84XM9m9ahH9Nl0",
     authDomain: "vuemessenger-cf856.firebaseapp.com",
     projectId: "vuemessenger-cf856",
@@ -18,10 +16,12 @@ const firebaseConfig = {
   };
 
   //se inicializa firebase
-  const app = initializeApp(firebaseConfig);
+  firebase.initializeApp(firebaseConfig);
 
   //se exportan constantes con los servicios que se van a usar, se usa app, que fue 
   //inicializado y constantes con los servicios de firebase
-  export  const auth = getAuth(app);
-  export  const db = getFirestore(app);
-  export  const storage = getStorage(app);
+  
+export const db = firebase.firestore(); 
+export const auth = firebase.auth();
+export const storage = firebase.storage();
+

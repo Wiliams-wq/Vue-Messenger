@@ -9,7 +9,7 @@
           <template v-if="isLogin">
             <div>
               <h1 class="title has-text-centered">Login</h1>
-              <form @submit.prevent="doLogin">
+              <form>
                 <div class="field">
                   <label class="label has-text-left">Email</label>
                   <div class="control">
@@ -44,12 +44,13 @@
                       type="submit"
                       class="button is-link"
                       :class="{ 'is-loading': isLoading }"
+                      @click.prevent="doLogin"
                     >
                       Login
                     </button>
                   </div>
                 </div>
-               <!--cambiamos el estado de isLogin, para que sea falso y se muestre
+                <!--cambiamos el estado de isLogin, para que sea falso y se muestre
                el formulario de registro-->
                 <a href="#" @click="isLogin = false"> No tengo cuenta</a>
               </form>
@@ -61,7 +62,7 @@
           <template v-else>
             <div>
               <h1 class="title has-text-centered">Registro</h1>
-              <form @submit.prevent="register">
+              <form >
                 <div class="field">
                   <label class="label has-text-left">Nombre</label>
                   <div class="control">
@@ -109,6 +110,7 @@
                       type="submit"
                       class="button is-link"
                       :class="{ 'is-loading': isLoading }"
+                      @click.prevent="Register"
                     >
                       Registrarse
                     </button>
@@ -142,8 +144,59 @@ export default {
     };
   },
   methods: {
-    register() {},
-    doLogin() {},
+//metodo para registrarse
+   async Register() {
+      this.isLoading = true;
+      try{
+          //llamamos a la store y usamos dispatch par enviar datos a la accion  user/doRegister se especifica
+        //el modulo en que esta, enviamos email, que esta en this.datosUser.email el password y nombre
+        await this.$store.dispatch("user/doRegister",{
+          email: this.datosUser.email,
+          password: this.datosUser.password,
+          name: this.datosUser.name
+        });
+        console.log("registro exitoso");
+        this.resetData();
+        this.redirect();
+      }catch(e){
+        console.log(e);
+      } finally{
+        this.isLoading = false;
+      }
+    },
+//metodo para iniciar sesion
+    async doLogin() {
+      //pasamos a true el spinner para que se muestre como cargando
+      this.isLoading = true;
+      try {
+        //llamamos a la store y usamos dispatch par enviar datos a la accion  user/doLogin se especifica
+        //el modulo en que esta, enviamos email, que esta en this.datosUser.email y el password
+        await this.$store.dispatch("user/doLogin", {
+          email: this.datosUser.email,
+          password: this.datosUser.password,
+        });
+        console.log("login exitoso");
+        this.resetData();
+        this.redirect();
+      } catch (error) {
+        console.log(error);
+      }finally{
+        this.isLoading = false;
+      }
+    },
+//metodo para limipiar los datos del formulario
+    resetData() {
+      this.datosUser = {
+        name: "",
+        email: "",
+        password: "",
+      };
+    },
+//metodo para redireccionar al home
+    redirect() {
+      this.$router.push({ name: "Home" });
+    },
+
   },
 };
 </script>
