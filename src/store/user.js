@@ -53,7 +53,26 @@ const  actions = {
     async doLogout({commit}) {
         await auth.signOut();
         commit('setUser', null);
-    }
+    },
+//vemos si el usuario esta o no logueado, usamos promesas
+    getCurrentUser() {
+        //creamos la promesa
+        return new Promise((resolve, reject) => {
+            //creamos la constante unsubscribe, este tendra el metodo onAuthStateChanged
+            //esto devuelve una promesa, recibimos user y devolvemos unsuscribe(se retorna a si mismo)
+            //si todo salve bien resolvemos con user
+          const unsubscribe = auth.onAuthStateChanged(
+            user => {
+              unsubscribe();
+              resolve(user);
+            },
+            () => {
+                //si algo falla, lanzamos reject
+              reject();
+            }
+          );
+        });
+      },
 
 };
 const getters = {
