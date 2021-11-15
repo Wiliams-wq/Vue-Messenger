@@ -54,7 +54,13 @@ const  actions = {
         await auth.signOut();
         commit('setUser', null);
     },
-//vemos si el usuario esta o no logueado, usamos promesas
+    //accion para recupera contraseña pasamos un email para nueva contraseña
+    async doReset(context, email) {
+        await auth.sendPasswordResetEmail(email);
+    },
+
+
+//vemos si el usuario esta o no logueado, usamos promesas esto para vue-router y los guardianes
     getCurrentUser() {
         //creamos la promesa
         return new Promise((resolve, reject) => {
@@ -73,6 +79,25 @@ const  actions = {
           );
         });
       },
+//accion para actualizar perfil, se obtiene el nombre, email y password
+//obtenemos el usuario con currentUser, luego comparamos name si tiene algo
+//que cambie displayname pasandole name igual con email y password
+      async updateProfile({commit}, {name, email, password}) {
+          const user = auth.currentUser;
+          if(name){
+              await user.updateProfile({
+                    displayName: name
+                });
+          }
+          if(email){
+              await user.updateEmail(email);
+          }
+          if(password){
+              await user.updatePassword(password);
+          }
+
+          commit('setUser', user);
+      }
 
 };
 const getters = {

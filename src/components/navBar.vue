@@ -31,7 +31,7 @@ esto con bulma-->
         <div class="navbar-start">
           <router-link class="navbar-item" to="/"> Home </router-link>
 
-          <router-link class="navbar-item" to="/"> Crear sala </router-link>
+          <router-link class="navbar-item" to="/create"> Crear sala </router-link>
         </div>
 
         <div class="navbar-end">
@@ -39,7 +39,7 @@ esto con bulma-->
             <div class="buttons">
               <!--template que se muestra si user tiene datos, este es es el perfil y boton de cerrar sesion-->
               <template v-if="user">
-                <router-link class="button is-primary" to="/">
+                <router-link class="button is-primary" :to="{name: 'profile'}">
                   <strong>Perfil</strong>
                 </router-link>
 

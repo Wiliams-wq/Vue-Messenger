@@ -21,24 +21,36 @@ const store = new Vuex.Store({
   },
 
   state: {
+    isLoading: true
   },
 
 
   mutations: {
+  //esta mutacion sirve para cambiar el estado de true a false, esta en estado
+    setLoading(state, loading) {
+      state.isLoading = loading;
+    }
   },
 
 
   actions: {
-    //el estado de autenticacion del usuario, para chequear si esta o no logueado
-    checkAuth({commit}){
+    //accion de index esta para validar informacion al iniciar el programa
+    //como autentificacion, salas en firestore,
+    checkAuth({dispatch, commit}){
       //usamos el metodo onAuthStateChanged de firebase para chequear si esta logueado o no
       auth.onAuthStateChanged(user => {
-        //comparamos la informacion de user, y mandamos el commit del estado de autenticacion
+        //comparamos la informacion de user si esta o no logueado
         if(user){
+          //commit para mandar la informacion a user de logueado
           commit('user/setUser', user);
+          //accion enviada a rooms para que si esta logueado, mostrarlos
+          dispatch('rooms/getRooms');
         }else{
           //si no esta logueado, madamos null a la mutacion setUser
           commit("user/setUser", null);
+          //si no esta logueado, mandamos a la mutacion serRooms una matriz vacia ya que no se
+          //debe mostrar nada
+          commit("rooms/setRooms", []);
         }
       })
     },
