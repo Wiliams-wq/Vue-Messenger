@@ -101,9 +101,12 @@ const  actions = {
 
 };
 const getters = {
-
+    //getter para tener el uid del usuario y comparar si es o no el dueño 
+    //del que creo la sala
+    getUserUid(state) {
+        return state.user.uid;
+    }
 };
-
 export default {
     namespaced: true,
     state,

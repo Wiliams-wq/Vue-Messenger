@@ -1,7 +1,7 @@
 <template>
   <section class="section">
     <div class="container">
-      <h1 class="title-has-text-centered">Salas</h1>
+      <h1 class="title-has-text-centered"> <b>Salas</b> </h1>
       <!--se muestra el componente, y le pasamos la propiedad la cual recibe la propiedad computada
       (valores traidos de el estado de rooms.js)-->
       <roomsComponent :rooms="rooms"/>

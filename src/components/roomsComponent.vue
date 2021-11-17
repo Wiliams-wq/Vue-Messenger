@@ -1,8 +1,8 @@
 <template>
-<!--este componente solo se muestra si dentro de setLoading es distinto de true
+  <!--este componente solo se muestra si dentro de setLoading es distinto de true
 diciendo que termino de cargar-->
   <div v-if="!$store.state.isLoading">
-      <!--este h1 se muestra solo si rooms es diferente de cero, quiere decir que no
+    <!--este h1 se muestra solo si rooms es diferente de cero, quiere decir que no
       tiene ni un dato-->
     <h1 v-if="!rooms.length" class="subtitle has-text-centered mt-2">
       No hay sala de conversacion.
@@ -25,7 +25,7 @@ diciendo que termino de cargar-->
           <div class="card-content">
             <div class="media">
               <div class="media-content">
-                  <!--mostramos el nombre de la sala-->
+                <!--mostramos el nombre de la sala-->
                 <p class="title is-4">{{ room.name }}</p>
                 <!--mostramos el nombre del que creo la sala-->
                 <p class="subtitle is-6"><b>Por </b> {{ room.CreateByName }}</p>
@@ -35,6 +35,16 @@ diciendo que termino de cargar-->
             <div class="content">
               {{ room.description }}
             </div>
+            <!--boton para editar, enviamos como parametro el id al router para que se muestre en la ruta
+            ya que es dinamica, usamos v-if para comparar que sea el mismo usuario el que lo creo y el que
+            esta en logueado, ya que si no puede cambiar los datos sin necesidad de ser el creador del mismo-->
+            <router-link
+              :to="{ name: 'updateRoom', params: { id: room.id } }"
+              class="button is-small"
+              v-if="room.createdBy === $store.getters['user/getUserUid']"
+            >
+              Editar
+            </router-link>
           </div>
         </div>
       </div>
@@ -55,4 +65,6 @@ export default {
     },
   },
 };
+
+
 </script>

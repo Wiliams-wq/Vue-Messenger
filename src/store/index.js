@@ -51,6 +51,9 @@ const store = new Vuex.Store({
           //si no esta logueado, mandamos a la mutacion serRooms una matriz vacia ya que no se
           //debe mostrar nada
           commit("rooms/setRooms", []);
+          //si no esta logueado, mandamos el mismo valor que tiene la mutacion setRoomsListener
+          //para que no se muestre nada
+          commit("rooms/setRoomsListener",  () => {});
         }
       })
     },
