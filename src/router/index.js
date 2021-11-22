@@ -5,7 +5,9 @@ import authView from '../views/authView.vue'
 import userProfileView from '../views/userProfileView.vue'
 import createRoom from '../views/createRoom.vue'
 import updateRoom from '../views/updateRoom.vue'
+import viewRoom from '../views/viewRoom.vue'
 import store from '../store/index'
+
 
 Vue.use(VueRouter)
 
@@ -48,9 +50,20 @@ const routes = [
   },
   {
     path: "/update/:id",
+    //habilitamos props y true para que el id que tenga de manera dinamica lo use en props
     props: true,
     name: "updateRoom",
     component:updateRoom,
+    meta: {
+      requiresAuth: true
+    }
+  },
+  {
+    path: "/view/:id",
+    //habilitamos props y true para que el id que tenga de manera dinamica lo use en props
+    props: true,
+    name: "viewRoom",
+    component: viewRoom,
     meta: {
       requiresAuth: true
     }

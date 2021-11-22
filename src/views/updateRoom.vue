@@ -69,7 +69,7 @@ export default {
         room = await this.$store.dispatch("rooms/getRoom", this.id);
         if(!room.exists) throw new Error("No existe la sala");
         //agregamos los datos de getRoom (room.data) a room
-          room = room.data;
+          room = room.data();
         
       }
         //agregamos la sala a la variable local room
@@ -78,7 +78,9 @@ export default {
       console.log(e);
     }
   },
-//recibimos el id del padre roomsComponent.vue que a su vez recibe de roomsView
+     //la propiedad que se recibe es el id, este es de tipo string y que sea requerido con eso
+    //este id es el mismo que tiene el ide de vue router para saber la sala presionada, por ende
+    //es el mismo
   props: {
     id: {
       type: String,

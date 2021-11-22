@@ -55,9 +55,9 @@ const actions = {
             createdAt: Date.now(),
             //agregamos el uid, este proporcionado por firebase autentication por eso lo llamamos
             //user como archivo y user como elemnto de estao
-            createdBy: rootState.user.user.uid,
+            userId: rootState.user.user.uid,
             //agregamos el nombre de quien lo creo, en este caso displayName
-            CreateByName: rootState.user.user.displayName
+            userName: rootState.user.user.displayName
         });
     },
 
@@ -135,7 +135,8 @@ const getters = {
     //se sabe cual se tiene 
     getRooms: state => id => {
         return state.rooms.filter(room => room.id === id);
-    }
+    },
+
 };
 
 
