@@ -44,7 +44,14 @@
                 </button>
               </div>
               <div class="control">
-                <button class="button is-danger">Borrar</button>
+                <button
+                  type="button"
+                  class="button is-danger"
+                  :class="{ 'is-loading': isLoading }"
+                  @click.prevent="removeRoom"
+                >
+                  Borrar
+                </button>
               </div>
             </div>
           </form>
@@ -60,27 +67,26 @@ export default {
   name: "UpdateRoom",
   async created() {
     try {
-        //obtener desde estado local, le pasamos el id para ubicar la sala del estado local
+      //obtener desde estado local, le pasamos el id para ubicar la sala del estado local
       let room = this.$store.getters["rooms/getRooms"](this.id);
       //si no existe la sala en el estado local, revisar firebase
       if (!room) {
-          //obtener desde firestore, si no hay nada en room o es distinto de true, lanzamos el
-            //error de que no existe la sala
+        //obtener desde firestore, si no hay nada en room o es distinto de true, lanzamos el
+        //error de que no existe la sala
         room = await this.$store.dispatch("rooms/getRoom", this.id);
-        if(!room.exists) throw new Error("No existe la sala");
+        if (!room.exists) throw new Error("No existe la sala");
         //agregamos los datos de getRoom (room.data) a room
-          room = room.data();
-        
+        room = room.data();
       }
-        //agregamos la sala a la variable local room
+      //agregamos la sala a la variable local room
       this.room = room;
     } catch (e) {
       console.log(e);
     }
   },
-     //la propiedad que se recibe es el id, este es de tipo string y que sea requerido con eso
-    //este id es el mismo que tiene el ide de vue router para saber la sala presionada, por ende
-    //es el mismo
+  //la propiedad que se recibe es el id, este es de tipo string y que sea requerido con eso
+  //este id es el mismo que tiene el ide de vue router para saber la sala presionada, por ende
+  //es el mismo
   props: {
     id: {
       type: String,
@@ -89,18 +95,18 @@ export default {
   },
   data() {
     return {
-        // la variable local como room en nulo  el loading es false
+      // la variable local como room en nulo  el loading es false
       room: null,
       isLoading: false,
     };
   },
 
   methods: {
-      //actualizmos la sala en firebase
+    //actualizmos la sala en firebase
     async updateRoom() {
       this.isLoading = true;
       try {
-          //enviamos los nuevos datos a la accion de rooms
+        //enviamos los nuevos datos a la accion de rooms
         await this.$store.dispatch("rooms/updateRoom", {
           id: this.id,
           name: this.room.name,
@@ -111,7 +117,27 @@ export default {
       } catch (e) {
         console.log(e);
       } finally {
-          //descativamos el isLoading
+        //descativamos el isLoading
+        this.isLoading = false;
+      }
+    },
+    //metodo para borrar la sala
+    async removeRoom() {
+      this.isLoading = true;
+      try {
+        //primero enviamos las propiedades en la accion requestConfirmation para mostrar el modal
+        //el mensaje es el de la prop, tambien mandamos el nombre del componente 
+        await this.$store.dispatch("utils/requestConfirmation", {
+          props: { message: "¿Estas seguro de borrar la sala?" },
+          component: "confirmationModal",
+        });
+        //si todo sale bien en esa accion, se elimina la sala, enviando el id 
+        await this.$store.dispatch("rooms/removeRoom", this.id);
+        //despues lo mandamos a la vista de rooms
+        this.$router.push("/");
+      } catch (e) {
+        console.log(e);
+      } finally {
         this.isLoading = false;
       }
     },
@@ -119,7 +145,7 @@ export default {
 
   computed: {
     hasDataChanged() {
-        //mostrar el boton si tiene algo name y description
+      //mostrar el boton si tiene algo name y description
       return this.room.name || this.room.description;
     },
   },

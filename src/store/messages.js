@@ -29,13 +29,12 @@ const mutations = {
 const actions = {
     //funcion asincrona para traer mensajes en firestore, para saber cual es 
     //la sala se pasa el Id de la misma
-    async getMessages({ commit }, roomID) {
+    async getMessages({ commit }) {
         //creamos el mensaje, es una subcoleccion de rooms,  y para que este atento se pasa
-        //la funcion doSnapshot
+        //la funcion doSnapshot, usando collectionGroup obtenemos todos los mensajes de los documentos
+        //messages
         const query = db
-            .collection("rooms")
-            .doc(roomID)
-            .collection("messages")
+            .collectionGroup("messages")
             .orderBy("createdAt", "desc")
             .onSnapshot(doSnapshot);
             //despues de crear el mensaje, el query se agrega a la funcion del estado
@@ -59,6 +58,9 @@ const actions = {
             commit('setMessages', messages);
         }
     },
+
+
+
 //accion para crear mensaje, se trae rooState, para tener los datos del usuario como su nombre
 //y su id, se pasa el mensaje que se enviara a la subcoleccion, enviada en viewRoom, tambien
 //recibe el parametro de la sala    
@@ -68,8 +70,9 @@ const actions = {
             //datos agregados a la subcoleccion
             userId: rootState.user.user.uid,
             userName: rootState.user.user.displayName,
+            roomId: roomID,
             message,
-            createdAt: new Date()
+            createdAt: Date.now()
         });
     }
 

@@ -5,7 +5,7 @@ const state = {
     rooms: [],
     //recibe a query, para activarlo o desactivarlo, si lo tiene el estado, no se activa
     //si no lo tiene el estado, se activa
-    roomsListener: () => {}
+    roomsListener: () => { }
 
 };
 
@@ -17,7 +17,7 @@ const mutations = {
     //mutacion para crear sala, unica con los datos y su id tipo de cambio add
     createRoom(state, { roomData, id }) {
         roomData.id = id
-        state.rooms.unshift(roomData)
+        state.rooms.push(roomData)
     },
     //mutacion para actualizar sala, se sabe cual es por su id pasandole su nuevo
     //valor
@@ -34,11 +34,11 @@ const mutations = {
     //escuchar al query que se pasa
     setRoomsListener(state, listener) {
         //si listener tiene algo
-        if(listener){
+        if (listener) {
             //se agrega al estado
             state.roomsListener = listener
             //si no tiene, se ejecuta el query
-        }else{
+        } else {
             state.roomsListener()
         }
     }
@@ -68,7 +68,7 @@ const actions = {
         //obtenemos la colleccion rooms de manera ordenada, tambien agregamos onSnapshot para
         //escuchar cambios en la coleccion, este recibe una funcion, creada en la parte de abajo
         const query = db.collection('rooms').orderBy('createdAt', 'desc').onSnapshot(doSnapshot);
-        
+
         //mandamos el query a la mutacion setRoomsListener
         commit('setRoomsListener', query)
 
@@ -127,6 +127,29 @@ const actions = {
         //enviamos a la coleccion los nuevos datos que tiene el arreglo roomData
         //se sabe cual es el documento por que recibimos el id, y este se lo pasamos a doc
         await db.collection('rooms').doc(id).update(roomData);
+    },
+
+    //metodo para eliminar sala, obtenemos el id para saber cual es la sala a eliminar
+    async removeRoom(context, roomId) {
+        //eobtenemos la el documento que esta en la coleccion roomss
+        const roomRef = db.collection('rooms').doc(roomId);
+        //obtenemos los mensajes de la sala roomRef se usa por que ya tiene la sala
+        //usamos onSnapshot para escuchar cambios en la coleccion
+        const messages = await roomRef.collection('messages').onSnapshot(doSnapshot);
+
+        //funcion para escuchar cambios de la coleccion
+        function doSnapshot(querysnapshot) {
+            //el callaback trae docs(los documentos que tiene  los mensajes) estos los recorremos
+            //usamos de manera asincrona
+            querysnapshot.docs.forEach(async doc => {
+                //eliminamos cada mensaje doc.id lo trae el callback y delete para eliminarlo
+                await roomRef.collection('messages').doc(doc.id).delete();
+            });
+            messages();// se unsubscribe
+
+            //ya teniendo la sala, y la coleccion de los mensajes, eliminamos  la sala con delete
+            roomRef.delete();
+        }
     }
 };
 
@@ -136,7 +159,13 @@ const getters = {
     getRooms: state => id => {
         return state.rooms.filter(room => room.id === id);
     },
-
+    //getter para ordenar salas, usamos metodo sort para ordenar a y b
+    //y ordena en base a createdAt creando una nueva fecha para que compare cual fue la primera sala
+    roomsByDate: state => {
+        return state.rooms.sort((a, b) => {
+            return new Date(b.createdAt) - new Date(a.createdAt);
+        });
+    }
 };
 
 

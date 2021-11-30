@@ -9,25 +9,29 @@
             <h1 class="title has-text-centered">{{ room.name }}</h1>
             <!--referencia messages para mostrar siempre el primer mensaje-->
             <div class="messages content" ref="messages">
-              <!--ciclar los mennsajes para que se muestren uno por uno cda vez que haya nuevos
+              <!--ciclar los mensajes para que se muestren uno por uno cda vez que haya nuevos
               y se muestra la clase messaje si el mensaje es del usuario esto se sabe usando el
-              el getters de user, comparando que sea igual al userId del message  messages de el mapState-->
+              el getters de user, comparando que sea igual al userId del message  messages de el mapState
+              usamos una propiedad computada para que filtre los mensajes de acuerdo a la sala -->
               <div
-                v-for="message in messages"
+                v-for="message in roomMessages"
                 :key="message.id"
                 class="message"
                 :class="{
-                  'message--own': message.userId === $store.getters['user/getUserUid']
+                  'message--own':
+                    message.userId === $store.getters['user/getUserUid'],
                 }"
               >
                 <p>
                   <!--se muesta el mensaje-->
                   {{ message.message }}
-                  <span v-if="message.userId !== $store.getters['user/getUserUid']">
-                  <br>
-                  <!--{{ message.createdAt | timeAgo}} para tiempo revisar el filtro y aprende
+                  <span
+                    v-if="message.userId !== $store.getters['user/getUserUid']"
+                  >
+                    <br />
+                    <!--{{ message.createdAt | timeAgo}} para tiempo revisar el filtro y aprende
                   a filtrar la fecha de creacion de la hora con Dayjs -->
-                  <small>{{message.userName}}</small>
+                    <small>{{ message.userName }}</small>
                   </span>
                 </p>
               </div>
@@ -67,49 +71,62 @@
 //uso de mapstate de messages
 import { mapState } from "vuex";
 
-const Dayjs = require('dayjs')
-const relativeTime = require('dayjs/plugin/relativeTime')
-Dayjs.extend(relativeTime)
-
-
+const Dayjs = require("dayjs");
+const relativeTime = require("dayjs/plugin/relativeTime");
+Dayjs.extend(relativeTime);
 
 export default {
   name: "ViewRoom",
-  //para cuando se crea el componente se ejecuta el metodo created 
+  //para cuando se crea el componente se ejecuta el metodo created
   async created() {
+
+    //con esto obtenemos el uid del usuario para saber cuando sale y entra de una sala en meta
+    this.userUid = this.$store.getters["user/getUserUid"];
+
     try {
       //primero en room revisa si existe la sala de manera local
       //con el getter se revisa y se obtitne el id, de la sala presionada
-      let room = this.$store.getters["rooms/getRooms"](this.id);
+      let room = await this.$store.getters["rooms/getRooms"](this.id);
+
+      //enviamos los datos a la mutacion para actualizar los datos en meta
+      this.$store.dispatch("user/updateMeta", {
+        roomID: this.id,
+        //false para quese ejecute arrayUnion
+        exit: false,
+        uid: this.userUid,
+      });
 
       //si room es distinto de true, entonces se obtiene la sala en firebase
       if (!room) {
         //la misma variable, se usa para obtener la sala en firebase se pasa en espeficico la sala
         //que se necesita en rooms que es get room, por eso se pasa el id(este id, por que fue
         //el componente presionado)
-        room = await this.$store.dispatch("rooms/getRoom", this.id);
+        this.room = await this.$store.dispatch("rooms/getRoom", this.id);
         //si en firebase no existe landamos el throw error
         if (!room.exists) throw new Error("Could not find room");
         //si si se obitiene, pasamos la data de la room a la variable room
         room = room.data();
-       
       }
       //los datos de la variable room(scoped local en la funcion) se le pasa a la varible room
-      //de este componente, 
+      //de este componente,
       this.room = room;
       //despues de ya sabido que se tiene la sala, se obtienen los mensajes creados, si es que los hay
-      this.$store.dispatch("messages/getMessages", this.id);
-      
+
       //si no error y redirecciona a home
     } catch (error) {
       console.error(error.message);
       this.$router.push({ name: "home" });
     }
   },
-  //despues de eso, se destruye ya que ya cumplio su cometido de revisar, pasandole null a la mutacion
-  //setMessagesListenr con nulo
+
   destroyed() {
-    this.$store.commit("messages/setMessagesListener", null);
+    //cambiamos los datos de meta, al mandar el id de la sal para saber en cual sala salio, exit para que sea el
+    //metodo arrayRemove y el uid 
+    this.$store.dispatch("user/updateMeta", {
+      roomID: this.id,
+      exit: true,
+      uid: this.userUid,
+    });
   },
   props: {
     //la propiedad que se recibe es el id, este es de tipo string y que sea requerido con eso
@@ -117,8 +134,8 @@ export default {
     //es el mismo
     id: {
       type: String,
-      required: true
-    }
+      required: true,
+    },
   },
   data() {
     //datos, mensaje(v-model) y isLoading(para el boton de enviar) y la sala para mostrar
@@ -126,6 +143,7 @@ export default {
       isLoading: false,
       message: "",
       room: null,
+      userUid: "",
     };
   },
   methods: {
@@ -144,7 +162,7 @@ export default {
         //sea suave
         window.scrollTo({
           top: height,
-          behavior: "smooth"
+          behavior: "smooth",
         });
       });
     },
@@ -153,13 +171,13 @@ export default {
     async createMessage() {
       //se pone el boton en cargando
       this.isLoading = true;
-      
+
       try {
         //lanzamos la mutacion para crear el mensaje, pasandole el id de la sala y el mensaje
         //esto lo tiene la variable meesage de este componente
         await this.$store.dispatch("messages/createMessage", {
           roomID: this.id,
-          message: this.message
+          message: this.message,
         });
         //llamamos a la funcion para que se mueva el scroll
         this.scrollDown();
@@ -172,24 +190,23 @@ export default {
         //termina de cargar
         this.isLoading = false;
       }
-    }
+    },
   },
   filters: {
-        timeAgo(timestamp) {
-    const date = new Date(timestamp);
-    return Dayjs().from(Dayjs(date), true);
-  }
-},
+    timeAgo(timestamp) {
+      const date = new Date(timestamp);
+      return Dayjs().from(Dayjs(date), true);
+    },
+  },
 
-
-
-
-  //usamos el mapState para mostrar los mensajs que hayan en 
+  //usamos el mapState para mostrar los mensajs que hayan en
   computed: {
     ...mapState("messages", ["messages"]),
-    ...mapState("rooms", ["rooms"])
-  }
-  
+    //retornamos los mensajes que corresponden a la sala de convesacion
+    roomMessages() {
+      return this.messages.filter(message => message.roomId === this.id);
+    },
+  },
 };
 </script>
 

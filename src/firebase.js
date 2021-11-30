@@ -21,7 +21,10 @@ import 'firebase/compat/storage'
   //se exportan constantes con los servicios que se van a usar, se usa app, que fue 
   //inicializado y constantes con los servicios de firebase
   
-export const db = firebase.firestore(); 
-export const auth = firebase.auth();
-export const storage = firebase.storage();
+const db = firebase.firestore(); 
+const auth = firebase.auth();
+const storage = firebase.storage();
+
+export { db, auth, storage, firebase };
+
 

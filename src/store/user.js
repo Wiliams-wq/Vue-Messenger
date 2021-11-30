@@ -1,9 +1,15 @@
 //modulo del usuario auntentificado o no auntentificado
 
-import { auth, db } from '../firebase.js'
+import { auth, db, firebase } from '../firebase.js'
 
 const state = {
-    user: null
+    user: null,
+    //meta de metadatos, esta guardara informacion donde esta conectado y cuando
+    //se conecto por ultima vez(en las salas)
+    meta: {},
+    //funcion que nos permite escuchar la informacion del usuario
+    userListener: () => { }
+
 };
 
 const mutations = {
@@ -11,6 +17,22 @@ const mutations = {
     //el usuario que viene de firebase y lo guardamos en el estado
     setUser(state, user) {
         state.user = user;
+    },
+    //agregamos los metadatos a meta  para tenerlos en el estado
+    setMeta(state, meta) {
+        state.meta = meta;
+    },
+
+    //funcion que nos permite escuchar la informacion del usuario
+    setUserListener(state, userListener) {
+        //si userListener es igual a true(tiene algo escuchado) entonces
+        // agregamos ese listener a la funcion
+        //si no, lanza la funcion para que escuche
+        if (userListener) {
+            state.userListener = userListener;
+        } else {
+            state.userListener();
+        }
     }
 };
 const actions = {
@@ -103,17 +125,17 @@ Las transacciones en Firebase permiten realizar acciones de lectura y escritura 
                 //el nombre de la subcoleccion
                 const query =
                     await db.collectionGroup("messages")
-                    //consulatamos todos los documentos y traemos en especifico los que 
-                    //sean iguales, el id del que creo el mensaje, con el id del usuario
-                    //que esta logueado en el estado
+                        //consulatamos todos los documentos y traemos en especifico los que 
+                        //sean iguales, el id del que creo el mensaje, con el id del usuario
+                        //que esta logueado en el estado
                         .where("userId", "==", state.user.uid)
                         .get();
-                        //todos los documentos que tiene query se recorren, se usa el callback
-                        //y se usa el metodo update, para actualizar el nombre del usuario
-                        //cda vez que recorra el documento, se sabe el documento con la referencia
-                        //doc.ref
+                //todos los documentos que tiene query se recorren, se usa el callback
+                //y se usa el metodo update, para actualizar el nombre del usuario
+                //cda vez que recorra el documento, se sabe el documento con la referencia
+                //doc.ref
                 query.forEach(doc => {
-                    transaction.update(doc.ref, {userName: name });
+                    transaction.update(doc.ref, { userName: name });
                 });
                 const query2 =
                     await db.collectionGroup("rooms")
@@ -121,9 +143,9 @@ Las transacciones en Firebase permiten realizar acciones de lectura y escritura 
                         .get();
 
                 query2.forEach(doc => {
-                    transaction.update(doc.ref, {userName: name });
+                    transaction.update(doc.ref, { userName: name });
                 })
-                
+
             })
         }
         if (email) {
@@ -134,7 +156,67 @@ Las transacciones en Firebase permiten realizar acciones de lectura y escritura 
         }
 
         commit('setUser', user);
-    }
+    },
+
+
+    //accion que srive para actualizar los metadatos, si entra a la sala de conversacion
+    //se actualiza los metadatos y decif que esta conectado, y si se sale cambiar los metadatos
+    //y mostrar el tiempo con timestamp
+
+    //se necesita un el id para saber en que sala entro, un boleano (exit) para saber si entro o no
+    //y el uid del usuario para crear su documento propio
+    async updateMeta(context, { roomID, exit, uid }) {
+
+        //creamos una coleccion para guardar los metadatos llamada user
+        const ref = db.collection("users").doc(uid);
+        //obtenemos los documentos y lo agregamos a userDoc
+        const userDoc = await ref.get()
+
+        //si userDoc no tiene nada, entonces con set agregamos una matriz vacia y no quede con nulo
+        //esto para evitar el error FirebaseError: No document to update
+        if (!userDoc.exists) {
+            await ref.set({});
+        }
+
+        //agregamos a una constante los valores que tenga esto con el operador ternario, si es true arrayRemove
+        //y si es false arrayUnion
+        const method = exit ? "arrayRemove" : "arrayUnion";
+
+
+        //actualizamos el documento con el metodo update, los datos que se actualizan es connected
+        //y usamos firebase.firestore.FieldValue es metodo para despues agregar arrayUnion o arrayRemove
+        //entre corchetes agregamos method por que esa constante tiene la propiedad y dentro de parentesis
+        //agregamos el id de la sala como string que cambia
+        await ref.update({
+            connected: firebase.firestore.FieldValue[method](`${roomID}`),
+            //agregamos joined esta propiedad tendra un arreglo con nombre del id de la sala que presiono
+            //por eso el uso del operador ternario, y luego agregamos la fecha en que fue cambiada con DateNow
+            [`joined.${roomID}`]: Date.now()
+
+        });
+    },
+    //esta accion sirve para obtener los metadatos en tiempo real  y se los pase al estado meta{}
+    async getMeta({ state, commit }) {
+        //consultamos a users y el documento con el id del usuario por eso consutamos ese doc y le pasamos state.user.uid
+        const ref = db.collection("users").doc(state.user.uid);
+        //al actualizar la consulta le pasamos a conected una matriz vacia, esto si se sale de la pantalla de
+        //o cierra la ventana de la web
+        await ref.update({
+            connected: [],
+        })
+        //query tendra lo que se escucha en ref con el metodo onSnapshot  que a su vez tiene como callback
+        //la funcion doSnapshot
+        const query = ref.onSnapshot(doSnapshot)
+        //a la mutacion le pasamos el query
+        commit("setUserListener", query)
+        //funcion que se ejecuta cada vez que se escucha un cambio en el documento doc si cambia algo
+        //se lanza el commit setMeta y se le envia los datos de doc
+        function doSnapshot(doc) {
+            commit("setMeta", doc.data())
+        }
+
+    },
+
 
 };
 const getters = {
@@ -142,7 +224,9 @@ const getters = {
     //del que creo la sala
     getUserUid(state) {
         return state.user.uid;
-    }
+    },
+
+
 };
 export default {
     namespaced: true,

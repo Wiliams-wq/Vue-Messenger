@@ -12,44 +12,55 @@ diciendo que termino de cargar-->
     <!--si es else se muestran todas las salas-->
     <div v-else class="columns is-multiline">
       <!-- Room element  con for para que room sea lo que tiene rooms-->
-      <div v-for="(room, index) in rooms" :key="index" class="column is-one-third">
+      <div
+        v-for="(room, index) in rooms"
+        :key="index"
+        class="column is-one-third"
+      >
         <!--router link envuelve todo el componente para que puede ser presionado y mandar al
         lugar de mensajes-->
-        <router-link :to="{name: 'viewRoom', params:{id: room.id}}">
-        <div class="card">
-          <div class="card-image">
-            <figure class="image is-16by9">
-              <img
-                src="https://bulma.io/images/placeholders/1280x960.png"
-                alt="Placeholder image"
-              />
-            </figure>
-          </div>
-          <div class="card-content">
-            <div class="media">
-              <div class="media-content">
-                <!--mostramos el nombre de la sala-->
-                <p class="title is-4">{{ room.name }}</p>
-                <!--mostramos el nombre del que creo la sala-->
-                <p class="subtitle is-6"><b>Por </b> {{ room.userName }}</p>
+        <router-link :to="{ name: 'viewRoom', params: { id: room.id } }">
+          <!--uso de la clase unread para que se muestre si hasUnreadMessages sea true-->
+          <div
+            class="card room"
+            :class="{ unread: hasUnreadMessages(room.id).length }"
+          >
+            <div v-if="hasUnreadMessages(room.id).length" class="unread-alert">
+              {{ hasUnreadMessages(room.id).length }} unread messages 🔥
+            </div>
+            <div class="card-image">
+              <figure class="image is-16by9">
+                <img
+                  src="https://bulma.io/images/placeholders/1280x960.png"
+                  alt="Placeholder image"
+                />
+              </figure>
+            </div>
+            <div class="card-content">
+              <div class="media">
+                <div class="media-content">
+                  <!--mostramos el nombre de la sala-->
+                  <p class="title is-4">{{ room.name }}</p>
+                  <!--mostramos el nombre del que creo la sala-->
+                  <p class="subtitle is-6"><b>Por </b> {{ room.userName }}</p>
+                </div>
               </div>
-            </div>
-            <!--mostramos la descripcion-->
-            <div class="content">
-              {{ room.description }}
-            </div>
-            <!--boton para editar, enviamos como parametro el id al router para que se muestre en la ruta
+              <!--mostramos la descripcion-->
+              <div class="content">
+                {{ room.description }}
+              </div>
+              <!--boton para editar, enviamos como parametro el id al router para que se muestre en la ruta
             ya que es dinamica, usamos v-if para comparar que sea el mismo usuario el que lo creo y el que
             esta en logueado, ya que si no puede cambiar los datos sin necesidad de ser el creador del mismo-->
-            <router-link
-              :to="{ name: 'updateRoom', params: { id: room.id } }"
-              class="button is-small"
-              v-if="room.createdBy === $store.getters['user/getUserUid']"
-            >
-              Editar
-            </router-link>
+              <router-link
+                :to="{ name: 'updateRoom', params: { id: room.id } }"
+                class="button is-small"
+                v-if="room.userId === $store.getters['user/getUserUid']"
+              >
+                Editar
+              </router-link>
+            </div>
           </div>
-        </div>
         </router-link>
       </div>
       <!-- End of room element -->
@@ -67,8 +78,47 @@ export default {
       type: Array,
       required: true,
     },
+    //propiedad recibida de roomsView
+    unreadMessages: {
+      type: Array,
+    },
+  },
+
+  methods: {
+    //si tiene mensajes sin leer que se muestre, pasamos el id de la sala
+    hasUnreadMessages(roomId) {
+      //filtramos la propiedad enviada, y retornamos si message con el id de la sala es igual al id de la sala
+      //en que esta
+      return this.unreadMessages.filter((message) => {
+        return message.roomId === roomId;
+      });
+    },
   },
 };
-
-
 </script>
+
+<style lang="scss" scoped>
+.room {
+  position: relative;
+  &.unread {
+    border: 3px solid orange;
+    animation: slidein 0.6s infinite alternate ease-in-out;
+  }
+  .unread-alert {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: orange;
+    padding: 1rem;
+    z-index: 2;
+  }
+}
+@keyframes slidein {
+  from {
+    transform: translateY(-1rem);
+  }
+  to {
+    transform: translateY(1rem);
+  }
+}
+</style>
