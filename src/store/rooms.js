@@ -1,5 +1,5 @@
 //este modulo maneja las salas de la app de mensajes
-import { db } from '../firebase';
+import { db, storage } from '../firebase';
 const state = {
     //arreglo que tiene las salas
     rooms: [],
@@ -44,11 +44,50 @@ const mutations = {
     }
 };
 const actions = {
+    //se obtiene la id de las salas pero de una manera mas limpia
+    getNewRoomId() {
+        return db.collection('rooms').doc()
+    },
+    //accion paraa agregar imagen a storage, se usa el id, de la sala y la imagen que se envia
+    async uploadRoomImage(context, { roomID, image }) {
+        //esta funcion retorna una promesa, primero creamos una variable
+        //en la que tiene la referencia de la imagen y la url en la que se guarda en storgae
+        //en este caso, rooms y  id de las sala a la que correponde y la imagen tendra el nombre
+        //de la sala mas -image.jpg
+        const uploadPhoto = () => {
+            let imageName = `rooms/${roomID}/${roomID}-image.jpg`;
+
+            //se retorna la promesa de storage.ref, que es una referencia a la imagen
+            // enviamos el path imagenName y el archivo image(enviado desde createRoom)
+            return storage.ref(imageName).put(image)
+        };
+        //con esta funcion, usamos ref como respuesta de la promesa
+        //esta lo retornamos con getDownloadURL, esta funcion esta en la documentacion y sirve
+        //para devolver una Url a ese recurso.
+        function getDownloaderURL(ref) {
+            return ref.getDownloadURL()
+        }
+
+        try {
+            //creamos una variable que contiene la promesa de la funcion uploadPhoto
+            let upload = await uploadPhoto();
+            //con esta funcion, usamos la promesa de getDownloaderURL y como parametro le pasamos
+            //esa url creada en imageName que lo tiene la funcion uploadPhoto
+            //con .ref para tener su referencia
+            return await getDownloaderURL(upload.ref);
+        } catch (error) {
+            console.log(error)
+        }
+    },
+
+
+
     //accion para crear sala, recibimos del componente el nombre y la descripcion
-    async createRoom({ rootState }, { name, description }) {
+    async createRoom({ rootState }, { name, description, image, roomID }) {
         //con await usamos la constante db de firestore y llamamos a la coleccion rooms si existe
-        //lo agrega y si no esta lo crea, con add agregamos los elementos que recibimos
-        await db.collection('rooms').add({
+        //lo agrega , creamos el documento con doc() y el id que se obtuvo en createRoom
+        //con la accion getNewRoomId y usamos set() para agregar los datos
+        await db.collection('rooms').doc(roomID).set({
             name,
             description,
             //este es para agregar el dato de ahora(momento en que se crea)
@@ -57,7 +96,9 @@ const actions = {
             //user como archivo y user como elemnto de estao
             userId: rootState.user.user.uid,
             //agregamos el nombre de quien lo creo, en este caso displayName
-            userName: rootState.user.user.displayName
+            userName: rootState.user.user.displayName,
+            //agregamos la imagen, que es la que se crea en la funcion uploadRoomImage
+            image
         });
     },
 
@@ -150,7 +191,8 @@ const actions = {
             //ya teniendo la sala, y la coleccion de los mensajes, eliminamos  la sala con delete
             roomRef.delete();
         }
-    }
+    },
+
 };
 
 const getters = {
