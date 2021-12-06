@@ -52,17 +52,23 @@ const mutations = {
 const actions = {
 
       //accion paraa agregar imagen a storage, se usa el id, de la sala y la imagen que se envia
-      async uploadMessageFile({rootGetters}, { roomID, file }) {
+      //tambien se agrega el tipo de dato que es, para agregar la extension
+      async uploadMessageFile({rootGetters}, { roomID, file, type}) {
 
         //creamos un timestamp  con el momento actual
         const timestamp = Date.now();
+
         //obtenemos el uid del usuario
         const userUid = rootGetters['user/getUserUid'];
+        //creamos una variable que sirve para comparar lo que tenga type, si es igual
+        //a phto, entonces va la extension jpg si es distinto va .wav
+        const extension = type === "photo" ? ".jpg" : ".wav";
         //esta funcion retorna una promesa, primero creamos una variable
         //en la que tiene la referencia de la imagen y la url en la que se guarda en storgae
         //en este caso, rooms, messsages, el nombre del que lo creo y el timestamp
         const uploadPhoto = () => {
-            let imageName = `rooms/${roomID}/messages/${userUid}--${timestamp}-image.jpg`;
+            //para saber el archivo le pasamos extesnsion ya que ese lo tiene
+            let imageName = `rooms/${roomID}/messages/${userUid}--${timestamp}-${extension}`;
 
             //se retorna la promesa de storage.ref, que es una referencia a la imagen
             // enviamos el path imagenName y el archivo image(enviado desde createRoom)
@@ -125,8 +131,9 @@ const actions = {
 
 //accion para crear mensaje, se trae rooState, para tener los datos del usuario como su nombre
 //y su id, se pasa el mensaje que se enviara a la subcoleccion, enviada en viewRoom, tambien
-//recibe el parametro de la sala, agregamos filters para agregarlo a la base del mensaje   
-    async createMessage({ rootState }, { roomID, message, photo, filter }) {
+//recibe el parametro de la sala, agregamos filters para agregarlo a la base del mensaje  
+//tambien obtenemos audio y lo agregamos a la base de datos 
+    async createMessage({ rootState }, { roomID, message, photo, filter, audio }) {
         //se crea una subcoleccion, que estara en el documento al que correponda el id
         await db.collection('rooms').doc(roomID).collection('messages').add({
             //datos agregados a la subcoleccion
@@ -136,6 +143,8 @@ const actions = {
             message,
             //uso de photo para guardar la url de la imagen
             photo,
+            //usamos audio para enviar a la base de datos
+            audio,
             //enviamos filter
             filter,
             createdAt: Date.now()

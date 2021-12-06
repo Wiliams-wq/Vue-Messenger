@@ -45,7 +45,8 @@ const actions = {
                   //se ejecuta cuando el usuario confirma la acción y se resuelve la promesa
                   //devolvemos la data del metodo
                 confirm: data => {
-                    //enviamos datos a actionHandler
+                    //enviamos datos a actionHandler recibe en resolve el nombre de confirm y el audio
+                    //por ejemplo
                   this.actionHandler(resolve, data)();
                 },
                 //si cancela, muestra un error en consola y se rechaza la promesa

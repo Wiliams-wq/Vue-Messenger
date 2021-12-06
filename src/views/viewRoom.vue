@@ -28,9 +28,14 @@
                 <div
                   v-if="message.photo"
                   class="message__photo"
-                 :class="message.filter" 
+                  :class="message.filter"
                   :style="{ 'background-image': `url(${message.photo})` }"
                 ></div>
+
+                <!-- se muestra el audio  -->
+                <div v-if="message.audio" class="message__audio">
+                  <audio :src="message.audio" controls></audio>
+                </div>
                 <p>
                   <!--se muesta el mensaje-->
                   {{ message.message }}
@@ -68,7 +73,25 @@
           class="photo-preview"
           :style="{ 'background-image': `url(${messagePhoto})` }"
         ></div>
-
+        <!--se usa un a en donde va una funcion click en donde
+        audio = se le agrega null, con la X para cerrar
+        messageAudio es una propieda computada-->
+        <div v-if="audio" class="audio-preview">
+          <a href="#" @click="audio = null" class="close">X</a>
+          <audio :src="messageAudio" controls></audio>
+        </div>
+        <!--boton para subir audio, metodo recordAudio-->
+        <div class="control">
+          <button
+            @click="recordAudio"
+            :disabled="isLoading"
+            type="button"
+            class="button"
+            :class="{ 'is-loading': isLoading }"
+          >
+            🎙
+          </button>
+        </div>
         <!--boton para subir imagen-->
         <div class="control">
           <button
@@ -182,31 +205,37 @@ export default {
       userUid: "",
       //foto com nulo
       photo: "",
-      //file por que tiene de imagen y audio
-      fileURL: "",
+      //la url de la foto
+      photoURL: "",
+      //la url del audio
+      audioURL: "",
       //propiedad para guardar el filtro que el usuario elija, y si no que quede normal
       filter: "",
+      //se guardaa el audio en una variable
+      audio: null,
     };
   },
   methods: {
     //obtenemos la foto y la guardamos en photo, luego pasamos a nulo
     //evento asicrono
-   async onFileChange(event) {
+    async onFileChange(event) {
       this.photo = event.target.files[0];
       this.$refs.file.value = null;
- //trabajamos desde utils, enviado propiedades y el componente,se usa async
- //y await por que desde requestConfirmation se trabaja con promesa
-      try{
-        this.filter = await this.$store.dispatch("utils/requestConfirmation",{
-          props:{
+      //trabajamos desde utils, enviado propiedades y el componente,se usa async
+      //y await por que desde requestConfirmation se trabaja con promesa
+      try {
+        this.filter = await this.$store.dispatch("utils/requestConfirmation", {
+          //enviamos a props message file y filters, y componente las  iniciales
+          //del archivo filterModal
+          props: {
             message: "Selecionar un filtro para la imagen",
             file: this.messagePhoto,
-            filters: this.$store.state.messages.filters
+            filters: this.$store.state.messages.filters,
           },
-          component: "filterModal"
+          component: "filterModal",
         });
-      }catch(e){
-        console.log(e)
+      } catch (e) {
+        console.log(e);
       }
     },
 
@@ -230,6 +259,27 @@ export default {
       });
     },
 
+//metodo para enviar los datos al requestConfirmation para  que se valide, 
+//try catch por que en utils se usa una promesa
+    async recordAudio(){
+      try{
+        this.audio = await this.$store.dispatch("utils/requestConfirmation", {
+          props: {
+            message: "Grabar un audio",
+          },
+          component: "recordModal",
+        });
+      }catch(e){
+        console.log(e);
+      }
+    },
+
+
+
+
+
+
+
     //metodo para crear mensajes
     async createMessage() {
       //se pone el boton en cargando
@@ -238,12 +288,27 @@ export default {
       try {
         //si tiene algo photo lanamos la accion y pasamos los datos que pide
         if (this.photo) {
-          this.fileURL = await this.$store.dispatch(
+          this.photoURL = await this.$store.dispatch(
             "messages/uploadMessageFile",
             {
               roomID: this.id,
               //enviamos la foto, la imagen
               file: this.photo,
+              type: "photo",
+            }
+          );
+        }
+        //si audio tiene algo entonces lanzamos la accion
+        //y pasamos los datos necesarios, como roomID y el audio
+        //y el tipo de dato que es audio por lo que tendra extension wav
+        if(this.audio){
+          this.audioURL = await this.$store.dispatch(
+            "messages/uploadMessageFile",
+            {
+              roomID: this.id,
+              //enviamos el audio
+              file: this.audio,
+              type: "audio",
             }
           );
         }
@@ -253,16 +318,18 @@ export default {
           roomID: this.id,
           message: this.message,
           //enviamos la url a createMesssage
-          photo: this.fileURL,
+          photo: this.photoURL,
           //enviamos el filtro a createMessage
           filter: this.filter,
+          //enviamos la url del audio
+          audio: this.audioURL,
         });
         //llamamos a la funcion para que se mueva el scroll
         this.scrollDown();
         //limpiamos el mensaje
         this.message = "";
         //limpiamos la foto y la url
-        this.photo = this.fileURL = null;
+        this.photo = this.photoURL = this.audio = this.audioURL = "";
       } catch (error) {
         //mostrar el error en consola
         console.error(error.message);
@@ -290,6 +357,10 @@ export default {
     //retorna la foto desde storage creando una url para photo
     messagePhoto() {
       return URL.createObjectURL(this.photo);
+    },
+    //creamos una propieda computada que retorna el audio en url
+    messageAudio() {
+      return URL.createObjectURL(this.audio);
     },
   },
 };
@@ -340,6 +411,22 @@ export default {
     margin-right: 1rem;
     border-radius: 1rem;
     cursor: pointer;
+  }
+    .audio-preview {
+    margin-right: 1rem;
+    cursor: pointer;
+    position: relative;
+    .close {
+      position: absolute;
+      top: 0;
+      right: 0;
+      padding: 1rem;
+      font-weight: bold;
+      background-color: black;
+      color: white;
+      text-decoration: none;
+      z-index: 1;
+    }
   }
 }
 .form {
