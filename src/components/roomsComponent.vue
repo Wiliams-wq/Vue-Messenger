@@ -28,14 +28,12 @@ diciendo que termino de cargar-->
             <div v-if="hasUnreadMessages(room.id).length" class="unread-alert">
               {{ hasUnreadMessages(room.id).length }} unread messages 🔥
             </div>
-            <div class="card-image">
-              <figure class="image is-16by9">
-                <img
-                  src="https://bulma.io/images/placeholders/1280x960.png"
-                  alt="Placeholder image"
-                />
-              </figure>
-            </div>
+            <!--card que tiene el fondo con la imagen que fue subida, se usar v-bind la funcion
+            getRoomImage con el id para que se sepa cual sala es y que imagen correponde-->
+            <div
+              class="card-image room__image"
+              :style="{ 'background-image': `url(${getRoomImage(room.id)})` }"
+            ></div>
             <div class="card-content">
               <div class="media">
                 <div class="media-content">
@@ -85,6 +83,16 @@ export default {
   },
 
   methods: {
+    //pasamos el id
+    getRoomImage(roomId) {
+      //con find buscamos el id que sea igual al que fue pasado por parametro
+      const room = this.rooms.find(room => room.id === roomId);
+      //si tiene algo lo muestra, si no, que muestre la imagen por defecto
+      return room.image ? room.image : require("@/assets/image1.jpg");
+    },
+
+
+
     //si tiene mensajes sin leer que se muestre, pasamos el id de la sala
     hasUnreadMessages(roomId) {
       //filtramos la propiedad enviada, y retornamos si message con el id de la sala es igual al id de la sala
@@ -120,5 +128,11 @@ export default {
   to {
     transform: translateY(1rem);
   }
+}
+
+.room__image {
+  height: 15vmax;
+  background-size: cover;
+  background-position: center;
 }
 </style>

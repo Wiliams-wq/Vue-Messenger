@@ -102,7 +102,6 @@ export default {
       isLoading: false,
       //recibe la imagen para enviar a storage
       image: null,
-
       roomData: {
         name: "",
         description: "",
@@ -112,6 +111,15 @@ export default {
     };
   },
   methods: {
+
+        //metodo para obtener la imagen, de manera local, primero obtenemos el evento
+    //luego agregamos a image, solo el primer elemento, si es que se agregan mas de uno
+    onFileChange(event) {
+      this.image = event.target.files[0];
+      //usamos la referencia, para luego agregar un valor de nulo
+      this.$refs.file.value = null;
+    },
+
     //creamos un metodo local para enviar datos a la accion de enviar datos a firestores
     async createRoom() {
       //encendemos el spinner
@@ -128,8 +136,7 @@ export default {
           //y el id, este esta en la variable de arriba
           this.imageURL = await this.$store.dispatch("rooms/uploadRoomImage", {
             roomID,
-            image: this.image,
-           
+            file: this.image
           });
         }
 
@@ -139,12 +146,12 @@ export default {
         await this.$store.dispatch("rooms/createRoom", {
           name: this.roomData.name,
           description: this.roomData.description,
-          //mandamos imagen para la base de datos
+          //mandamos imagen para la base de datos, pero la url
           image: this.imageURL,
           //y el id de la sala
           roomID,
         });
-        this.roomData.name, this.roomData.description, this.imageURL = "";
+        this.roomData.name, this.roomData.description, this.roomData.imageURL = "";
 
 
         console.log("sala creada");
@@ -157,13 +164,7 @@ export default {
         this.isLoading = false;
       }
     },
-    //metodo para obtener la imagen, de manera local, primero obtenemos el evento
-    //luego agregamos a image, solo el primer elemento, si es que se agregan mas de uno
-    onFileChange(event) {
-      this.image = event.target.files[0];
-      //usamos la referencia, para luego agregar un valor de nulo
-      this.$refs.file.value = null;
-    },
+
   },
 
   computed: {
@@ -174,7 +175,7 @@ export default {
       //la imagen si hay algo. aca creamos un objeto de tipo url con la imagen
         ? URL.createObjectURL(this.image)
         //o el cargado por el programador
-      : require("@/assets/img/image1.jpg");
+      : require("@/assets/image1.jpg");
     },
   },
 };

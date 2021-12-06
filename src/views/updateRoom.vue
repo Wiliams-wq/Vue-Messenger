@@ -31,6 +31,45 @@
               </div>
             </div>
 
+             <div class="field">
+              <label class="label">Image</label>
+              <div class="control">
+                <div
+                  class="room__image"
+                  :style="{
+                    'background-image': `url(${roomImage})`
+                  }"
+                >
+                  <a
+                    href="#"
+                    v-if="imageURL"
+                    @click.prevent="image = imageURL = null"
+                    class="is-pulled-right button is-small is-danger is-outlined"
+                    >X</a
+                  >
+                </div>
+                <div class="file">
+                  <label class="file-label">
+                    <input
+                      class="file-input"
+                      type="file"
+                      @change="onFileChange"
+                      ref="file"
+                    />
+                    <span class="file-cta">
+                      <span class="file-label">
+                        Choose a image
+                      </span>
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+
+
+
+
             <div class="field is-grouped is-grouped-right">
               <div class="control">
                 <button
@@ -67,19 +106,10 @@ export default {
   name: "UpdateRoom",
   async created() {
     try {
-      //obtener desde estado local, le pasamos el id para ubicar la sala del estado local
-      let room = this.$store.getters["rooms/getRooms"](this.id);
-      //si no existe la sala en el estado local, revisar firebase
-      if (!room) {
-        //obtener desde firestore, si no hay nada en room o es distinto de true, lanzamos el
-        //error de que no existe la sala
-        room = await this.$store.dispatch("rooms/getRoom", this.id);
-        if (!room.exists) throw new Error("No existe la sala");
-        //agregamos los datos de getRoom (room.data) a room
-        room = room.data();
-      }
-      //agregamos la sala a la variable local room
-      this.room = room;
+      this.room = await this.$store.dispatch("rooms/getRoom", this.id)
+
+      //agregamos a la url lo que haya dentro de imagen.
+      this.imageURL = this.room._delegate._document.data.value.mapValue.fields.image.stringValue;
     } catch (e) {
       console.log(e);
     }
@@ -98,19 +128,48 @@ export default {
       // la variable local como room en nulo  el loading es false
       room: null,
       isLoading: false,
+      image: null,
+      //imageURL, primero devuelve del archivo local, y luego de la url final a ese archivo en 
+      //storage de firebase
+      imageURL: "",
     };
   },
 
   methods: {
+    //capturamos el evento, luego en image agregamos solo una imagen si es que se seleccionan mas
+    onFileChange(event){
+      this.image = event.target.files[0];
+      //a la variable imageURL le asignamos la url de la imagen creando una nueva url
+      this.imageURL = URL.createObjectURL(this.image)
+      //limpiamos el valor que tiene pasandole null
+      this.$refs.file.value = null
+    },
+
+
+
+
     //actualizmos la sala en firebase
     async updateRoom() {
       this.isLoading = true;
       try {
+//si hay imagen que se ejecute lo siguiente
+        if(this.image){
+          //de manera local, se pasa el id y la imagen,y esto se agrega a la imageURL
+          this.imageURL = await this.$store.dispatch("rooms/uploadRoomImage",{
+            roomID: this.id,
+            file: this.image
+          })
+
+          
+        }
+
+
         //enviamos los nuevos datos a la accion de rooms
         await this.$store.dispatch("rooms/updateRoom", {
           id: this.id,
           name: this.room.name,
           description: this.room.description,
+          image: this.imageURL
         });
         //despues lo mandamos a la vista de rooms
         this.$router.push("/");
@@ -145,9 +204,25 @@ export default {
 
   computed: {
     hasDataChanged() {
-      //mostrar el boton si tiene algo name y description
+      //mostrar el boton si tiene algo name 0 description
       return this.room.name || this.room.description;
     },
+    //si imageURL tiene algo que lo devuelva, si no , que requiera la imagen local del proyecto
+    roomImage(){
+      //imageUrl esta dentro del estado
+      return this.imageURL ? this.imageURL : require("@/assets/image1.jpg");
+    }
   },
 };
 </script>
+
+<style lang="scss" scoped>
+.room__image {
+  height: 20vmax;
+  padding: 1rem;
+  margin: 1rem 0;
+  border: 1px solid;
+  background-size: cover;
+  background-position: center;
+}
+</style>

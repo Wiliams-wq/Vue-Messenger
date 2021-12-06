@@ -48,8 +48,10 @@ const actions = {
     getNewRoomId() {
         return db.collection('rooms').doc()
     },
+
+
     //accion paraa agregar imagen a storage, se usa el id, de la sala y la imagen que se envia
-    async uploadRoomImage(context, { roomID, image }) {
+    async uploadRoomImage(context, { roomID, file }) {
         //esta funcion retorna una promesa, primero creamos una variable
         //en la que tiene la referencia de la imagen y la url en la que se guarda en storgae
         //en este caso, rooms y  id de las sala a la que correponde y la imagen tendra el nombre
@@ -59,12 +61,12 @@ const actions = {
 
             //se retorna la promesa de storage.ref, que es una referencia a la imagen
             // enviamos el path imagenName y el archivo image(enviado desde createRoom)
-            return storage.ref(imageName).put(image)
+            return storage.ref(imageName).put(file)
         };
         //con esta funcion, usamos ref como respuesta de la promesa
         //esta lo retornamos con getDownloadURL, esta funcion esta en la documentacion y sirve
         //para devolver una Url a ese recurso.
-        function getDownloaderURL(ref) {
+        function getDownloadURL(ref) {
             return ref.getDownloadURL()
         }
 
@@ -73,10 +75,10 @@ const actions = {
             let upload = await uploadPhoto();
             //con esta funcion, usamos la promesa de getDownloaderURL y como parametro le pasamos
             //esa url creada en imageName que lo tiene la funcion uploadPhoto
-            //con .ref para tener su referencia
-            return await getDownloaderURL(upload.ref);
+            //con .ref para tener su referencia. Devuelve una url al recurso subido
+            return await getDownloadURL(upload.ref);
         } catch (error) {
-            console.log(error)
+            throw Error(error.message)
         }
     },
 
@@ -87,19 +89,22 @@ const actions = {
         //con await usamos la constante db de firestore y llamamos a la coleccion rooms si existe
         //lo agrega , creamos el documento con doc() y el id que se obtuvo en createRoom
         //con la accion getNewRoomId y usamos set() para agregar los datos
-        await db.collection('rooms').doc(roomID).set({
-            name,
-            description,
-            //este es para agregar el dato de ahora(momento en que se crea)
-            createdAt: Date.now(),
-            //agregamos el uid, este proporcionado por firebase autentication por eso lo llamamos
-            //user como archivo y user como elemnto de estao
-            userId: rootState.user.user.uid,
-            //agregamos el nombre de quien lo creo, en este caso displayName
-            userName: rootState.user.user.displayName,
-            //agregamos la imagen, que es la que se crea en la funcion uploadRoomImage
-            image
-        });
+        await db
+            .collection('rooms')
+            .doc(roomID)
+            .set({
+                name,
+                description,
+                //este es para agregar el dato de ahora(momento en que se crea)
+                createdAt: Date.now(),
+                //agregamos el uid, este proporcionado por firebase autentication por eso lo llamamos
+                //user como archivo y user como elemnto de estao
+                userId: rootState.user.user.uid,
+                //agregamos el nombre de quien lo creo, en este caso displayName
+                userName: rootState.user.user.displayName,
+                //agregamos la imagen, que es la que se crea en la funcion uploadRoomImage
+                image
+            });
     },
 
 
@@ -158,13 +163,17 @@ const actions = {
         return await db.collection('rooms').doc(id).get();
     },
     //metodo para actualizar la sala
-    async updateRoom(context, { id, name, description }) {
+    async updateRoom(context, { id, name, description, image }) {
         //constante (arreglo)que se enviara a la coleccion al actualizar
         const roomData = {};
         //si name tiene algo agregamos a al arreglo de roomData lo recibido enviado por el componente
         if (name) roomData.name = name;
         //si description tiene algo agregamos a al arreglo de roomData lo recibido enviado por el componente
         if (description) roomData.description = description;
+
+        //agregamos la nueva imagen  a roomData
+        roomData.image = image;
+
         //enviamos a la coleccion los nuevos datos que tiene el arreglo roomData
         //se sabe cual es el documento por que recibimos el id, y este se lo pasamos a doc
         await db.collection('rooms').doc(id).update(roomData);
@@ -207,7 +216,7 @@ const getters = {
         return state.rooms.sort((a, b) => {
             return new Date(b.createdAt) - new Date(a.createdAt);
         });
-    }
+    },
 };
 
 
