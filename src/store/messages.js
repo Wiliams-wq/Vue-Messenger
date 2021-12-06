@@ -6,7 +6,30 @@ const state = {
     messages: [],
     //recibe el query si el estado tiene la informacion de los mensajes no se activa
     //si no lo tiene se activa
-    messagesListener: () => { }
+    messagesListener: () => { },
+
+    //filtros para las imagenes
+    filters: [
+        { name: "normal" },
+        { name: "clarendon" },
+        { name: "gingham" },
+        { name: "moon" },
+        { name: "lark" },
+        { name: "reyes" },
+        { name: "juno" },
+        { name: "slumber" },
+        { name: "aden" },
+        { name: "perpetua" },
+        { name: "mayfair" },
+        { name: "rise" },
+        { name: "hudson" },
+        { name: "valencia" },
+        { name: "xpro2" },
+        { name: "willow" },
+        { name: "lofi" },
+        { name: "inkwell" },
+        { name: "nashville" }
+      ]
 };
 
 const mutations = {
@@ -102,8 +125,8 @@ const actions = {
 
 //accion para crear mensaje, se trae rooState, para tener los datos del usuario como su nombre
 //y su id, se pasa el mensaje que se enviara a la subcoleccion, enviada en viewRoom, tambien
-//recibe el parametro de la sala    
-    async createMessage({ rootState }, { roomID, message, photo }) {
+//recibe el parametro de la sala, agregamos filters para agregarlo a la base del mensaje   
+    async createMessage({ rootState }, { roomID, message, photo, filter }) {
         //se crea una subcoleccion, que estara en el documento al que correponda el id
         await db.collection('rooms').doc(roomID).collection('messages').add({
             //datos agregados a la subcoleccion
@@ -113,6 +136,8 @@ const actions = {
             message,
             //uso de photo para guardar la url de la imagen
             photo,
+            //enviamos filter
+            filter,
             createdAt: Date.now()
         });
     }

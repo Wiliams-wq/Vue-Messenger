@@ -22,10 +22,13 @@
                     message.userId === $store.getters['user/getUserUid'],
                 }"
               >
-                <!-- Message has photo -->
+                <!-- Message has photo se agrega
+                una clase dinamica para que se muestre
+                el filtro elegido -->
                 <div
                   v-if="message.photo"
                   class="message__photo"
+                 :class="message.filter" 
                   :style="{ 'background-image': `url(${message.photo})` }"
                 ></div>
                 <p>
@@ -181,13 +184,30 @@ export default {
       photo: "",
       //file por que tiene de imagen y audio
       fileURL: "",
+      //propiedad para guardar el filtro que el usuario elija, y si no que quede normal
+      filter: "",
     };
   },
   methods: {
     //obtenemos la foto y la guardamos en photo, luego pasamos a nulo
-    onFileChange(event) {
+    //evento asicrono
+   async onFileChange(event) {
       this.photo = event.target.files[0];
       this.$refs.file.value = null;
+ //trabajamos desde utils, enviado propiedades y el componente,se usa async
+ //y await por que desde requestConfirmation se trabaja con promesa
+      try{
+        this.filter = await this.$store.dispatch("utils/requestConfirmation",{
+          props:{
+            message: "Selecionar un filtro para la imagen",
+            file: this.messagePhoto,
+            filters: this.$store.state.messages.filters
+          },
+          component: "filterModal"
+        });
+      }catch(e){
+        console.log(e)
+      }
     },
 
     //metodo para que, cuando se mande un mensaje la pantalla siempre se mantenga la inicio
@@ -234,6 +254,8 @@ export default {
           message: this.message,
           //enviamos la url a createMesssage
           photo: this.fileURL,
+          //enviamos el filtro a createMessage
+          filter: this.filter,
         });
         //llamamos a la funcion para que se mueva el scroll
         this.scrollDown();
