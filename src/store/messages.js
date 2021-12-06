@@ -1,6 +1,6 @@
 //este modulo maneja los mensajes de la app, lo que llega y envia
 
-import { db } from '../firebase'
+import { db, storage } from '../firebase'
 const state = {
     //mensajes son para guardar los mensajes que se creen en el chat
     messages: [],
@@ -27,6 +27,45 @@ const mutations = {
 
 };
 const actions = {
+
+      //accion paraa agregar imagen a storage, se usa el id, de la sala y la imagen que se envia
+      async uploadMessageFile({rootGetters}, { roomID, file }) {
+
+        //creamos un timestamp  con el momento actual
+        const timestamp = Date.now();
+        //obtenemos el uid del usuario
+        const userUid = rootGetters['user/getUserUid'];
+        //esta funcion retorna una promesa, primero creamos una variable
+        //en la que tiene la referencia de la imagen y la url en la que se guarda en storgae
+        //en este caso, rooms, messsages, el nombre del que lo creo y el timestamp
+        const uploadPhoto = () => {
+            let imageName = `rooms/${roomID}/messages/${userUid}--${timestamp}-image.jpg`;
+
+            //se retorna la promesa de storage.ref, que es una referencia a la imagen
+            // enviamos el path imagenName y el archivo image(enviado desde createRoom)
+            return storage.ref(imageName).put(file)
+        };
+        //con esta funcion, usamos ref como respuesta de la promesa
+        //esta lo retornamos con getDownloadURL, esta funcion esta en la documentacion y sirve
+        //para devolver una Url a ese recurso.
+        function getDownloadURL(ref) {
+            return ref.getDownloadURL()
+        }
+
+        try {
+            //creamos una variable que contiene la promesa de la funcion uploadPhoto
+            let upload = await uploadPhoto();
+            //con esta funcion, usamos la promesa de getDownloaderURL y como parametro le pasamos
+            //esa url creada en imageName que lo tiene la funcion uploadPhoto
+            //con .ref para tener su referencia. Devuelve una url al recurso subido
+            return await getDownloadURL(upload.ref);
+        } catch (error) {
+            throw Error(error.message)
+        }
+    },
+
+
+
     //funcion asincrona para traer mensajes en firestore, para saber cual es 
     //la sala se pasa el Id de la misma
     async getMessages({ commit }) {
@@ -64,7 +103,7 @@ const actions = {
 //accion para crear mensaje, se trae rooState, para tener los datos del usuario como su nombre
 //y su id, se pasa el mensaje que se enviara a la subcoleccion, enviada en viewRoom, tambien
 //recibe el parametro de la sala    
-    async createMessage({ rootState }, { roomID, message }) {
+    async createMessage({ rootState }, { roomID, message, photo }) {
         //se crea una subcoleccion, que estara en el documento al que correponda el id
         await db.collection('rooms').doc(roomID).collection('messages').add({
             //datos agregados a la subcoleccion
@@ -72,6 +111,8 @@ const actions = {
             userName: rootState.user.user.displayName,
             roomId: roomID,
             message,
+            //uso de photo para guardar la url de la imagen
+            photo,
             createdAt: Date.now()
         });
     }

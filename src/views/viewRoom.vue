@@ -22,6 +22,12 @@
                     message.userId === $store.getters['user/getUserUid'],
                 }"
               >
+                <!-- Message has photo -->
+                <div
+                  v-if="message.photo"
+                  class="message__photo"
+                  :style="{ 'background-image': `url(${message.photo})` }"
+                ></div>
                 <p>
                   <!--se muesta el mensaje-->
                   {{ message.message }}
@@ -51,6 +57,34 @@
             placeholder="Escribe tu mensaje aqui..."
           ></textarea>
         </div>
+
+        <!--div para mostrar la foto, si tiene, si no, no muestra nada-->
+        <div
+          v-if="photo"
+          @click="photo = null"
+          class="photo-preview"
+          :style="{ 'background-image': `url(${messagePhoto})` }"
+        ></div>
+
+        <!--boton para subir imagen-->
+        <div class="control">
+          <button
+            @click="$refs.file.click()"
+            :disabled="isLoading"
+            type="button"
+            class="button"
+            :class="{ 'is-loading': isLoading }"
+          >
+            🌄
+          </button>
+          <input
+            @change="onFileChange"
+            ref="file"
+            type="file"
+            class="inputfile"
+            style="display: none !important"
+          />
+        </div>
         <!--se muestra el boton solo si tiene escrito algo disable es distinto de true-->
         <div class="control">
           <button
@@ -79,7 +113,6 @@ export default {
   name: "ViewRoom",
   //para cuando se crea el componente se ejecuta el metodo created
   async created() {
-
     //con esto obtenemos el uid del usuario para saber cuando sale y entra de una sala en meta
     this.userUid = this.$store.getters["user/getUserUid"];
 
@@ -121,7 +154,7 @@ export default {
 
   destroyed() {
     //cambiamos los datos de meta, al mandar el id de la sal para saber en cual sala salio, exit para que sea el
-    //metodo arrayRemove y el uid 
+    //metodo arrayRemove y el uid
     this.$store.dispatch("user/updateMeta", {
       roomID: this.id,
       exit: true,
@@ -144,9 +177,19 @@ export default {
       message: "",
       room: null,
       userUid: "",
+      //foto com nulo
+      photo: "",
+      //file por que tiene de imagen y audio
+      fileURL: "",
     };
   },
   methods: {
+    //obtenemos la foto y la guardamos en photo, luego pasamos a nulo
+    onFileChange(event) {
+      this.photo = event.target.files[0];
+      this.$refs.file.value = null;
+    },
+
     //metodo para que, cuando se mande un mensaje la pantalla siempre se mantenga la inicio
     // y no sea necesario hacer scroll para verlos
     scrollDown() {
@@ -173,16 +216,31 @@ export default {
       this.isLoading = true;
 
       try {
+        //si tiene algo photo lanamos la accion y pasamos los datos que pide
+        if (this.photo) {
+          this.fileURL = await this.$store.dispatch(
+            "messages/uploadMessageFile",
+            {
+              roomID: this.id,
+              //enviamos la foto, la imagen
+              file: this.photo,
+            }
+          );
+        }
         //lanzamos la mutacion para crear el mensaje, pasandole el id de la sala y el mensaje
         //esto lo tiene la variable meesage de este componente
         await this.$store.dispatch("messages/createMessage", {
           roomID: this.id,
           message: this.message,
+          //enviamos la url a createMesssage
+          photo: this.fileURL,
         });
         //llamamos a la funcion para que se mueva el scroll
         this.scrollDown();
         //limpiamos el mensaje
         this.message = "";
+        //limpiamos la foto y la url
+        this.photo = this.fileURL = null;
       } catch (error) {
         //mostrar el error en consola
         console.error(error.message);
@@ -204,7 +262,12 @@ export default {
     ...mapState("messages", ["messages"]),
     //retornamos los mensajes que corresponden a la sala de convesacion
     roomMessages() {
-      return this.messages.filter(message => message.roomId === this.id);
+      return this.messages.filter((message) => message.roomId === this.id);
+    },
+
+    //retorna la foto desde storage creando una url para photo
+    messagePhoto() {
+      return URL.createObjectURL(this.photo);
     },
   },
 };
@@ -225,7 +288,19 @@ export default {
     width: 75%;
     align-self: flex-end;
   }
+
+  &__time {
+    color: gray;
+    font-size: 12px;
+  }
+
+  &__photo {
+    height: 20vmax;
+    background-size: cover;
+    background-position: center;
+  }
 }
+
 .send {
   background-color: gray;
   padding: 1rem;
@@ -233,6 +308,17 @@ export default {
   bottom: 0;
   left: 0;
   width: 100%;
+
+  .photo-preview {
+    width: 5rem;
+    height: 5rem;
+    border: 1px solid;
+    background-position: center;
+    background-size: cover;
+    margin-right: 1rem;
+    border-radius: 1rem;
+    cursor: pointer;
+  }
 }
 .form {
   display: flex;
