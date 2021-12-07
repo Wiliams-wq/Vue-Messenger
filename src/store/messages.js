@@ -149,7 +149,18 @@ const actions = {
             filter,
             createdAt: Date.now()
         });
-    }
+    },
+
+    //borramos el archivo multimedia de storage
+    async deleteFile(context, file) {
+        const fileRef = storage.refFromURL(file);
+        await fileRef.delete();
+      },
+
+      //borramos el mensaje obtiendo el roomID y el messageID
+    async deleteMessage(context, {roomID, messageID}) {    
+        await db.collection('rooms').doc(roomID).collection('messages').doc(messageID).delete();
+    },
 
 };
 const getters = {

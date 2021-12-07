@@ -22,6 +22,19 @@
                     message.userId === $store.getters['user/getUserUid'],
                 }"
               >
+                <!-- Delete message -->
+                <a
+                  href="#"
+                  v-if="message.userId === $store.getters['user/getUserUid']"
+                  @click="deleteMessage(message.id)"
+                  class="
+                    message__delete
+                    is-pulled-right
+                    button
+                    is-small is-danger is-outlined
+                  "
+                  >X</a
+                >
                 <!-- Message has photo se agrega
                 una clase dinamica para que se muestre
                 el filtro elegido -->
@@ -259,26 +272,20 @@ export default {
       });
     },
 
-//metodo para enviar los datos al requestConfirmation para  que se valide, 
-//try catch por que en utils se usa una promesa
-    async recordAudio(){
-      try{
+    //metodo para enviar los datos al requestConfirmation para  que se valide,
+    //try catch por que en utils se usa una promesa
+    async recordAudio() {
+      try {
         this.audio = await this.$store.dispatch("utils/requestConfirmation", {
           props: {
             message: "Grabar un audio",
           },
           component: "recordModal",
         });
-      }catch(e){
+      } catch (e) {
         console.log(e);
       }
     },
-
-
-
-
-
-
 
     //metodo para crear mensajes
     async createMessage() {
@@ -301,7 +308,7 @@ export default {
         //si audio tiene algo entonces lanzamos la accion
         //y pasamos los datos necesarios, como roomID y el audio
         //y el tipo de dato que es audio por lo que tendra extension wav
-        if(this.audio){
+        if (this.audio) {
           this.audioURL = await this.$store.dispatch(
             "messages/uploadMessageFile",
             {
@@ -336,6 +343,38 @@ export default {
       } finally {
         //termina de cargar
         this.isLoading = false;
+      }
+    },
+    //metodo para borrar mensaje, usamos el modal de confirmationModal
+    async deleteMessage(messageID) {
+      try {
+        await this.$store.dispatch("utils/requestConfirmation", {
+          props: {
+            message: "¿Eliminar mensaje?",
+          },
+          component: "confirmationModal",
+        });
+        //obtenemos  el id del mensaje, esto esta en roomMessaes
+        const message = this.roomMessages.find(
+          (message) => message.id === messageID
+        );
+        //si el mensaje tiene una foto, mandamos esa foto a deleteFile
+        //para que lo borremos
+        if (message.photo) {
+          await this.$store.dispatch("messages/deleteFile", message.photo);
+        }
+       //si el mensaje tiene un audio, mandamos ese audio a deleteFile
+        //para que lo borremos
+        if (message.audio) {
+          await this.$store.dispatch("messages/deleteFile", message.audio);
+        }
+        //borramos el mensaje enviado el id de la sala y el id del mensaje
+        await this.$store.dispatch("messages/deleteMessage", {
+          roomID: this.id,
+          messageID: messageID,
+        });
+      } catch (e) {
+        console.log(e);
       }
     },
   },
@@ -392,6 +431,11 @@ export default {
     background-size: cover;
     background-position: center;
   }
+  &__delete {
+    position: relative;
+    z-index: 1;
+    margin-bottom: 1rem;
+  }
 }
 
 .send {
@@ -412,7 +456,7 @@ export default {
     border-radius: 1rem;
     cursor: pointer;
   }
-    .audio-preview {
+  .audio-preview {
     margin-right: 1rem;
     cursor: pointer;
     position: relative;
