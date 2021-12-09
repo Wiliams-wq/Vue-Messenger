@@ -60,9 +60,22 @@ const actions = {
 
         //obtenemos el uid del usuario
         const userUid = rootGetters['user/getUserUid'];
-        //creamos una variable que sirve para comparar lo que tenga type, si es igual
-        //a phto, entonces va la extension jpg si es distinto va .wav
-        const extension = type === "photo" ? ".jpg" : ".wav";
+        //creamos let extension para obtener la extension del archivo
+        let extension;
+        //creamos una constante que almacena los metadatos
+        const metadata = {};
+        //comparamos si type es igual a photo, si es asi se agrega la extension
+        if (type === 'photo') {
+            extension = 'jpg';
+            //agregamos a metadata image/jpeg con contentType
+            metadata.contentType = 'image/jpeg';
+        } else {
+            //si es distinto a photo, se agrega la extension a wav
+            extension = 'wav';
+            metadata.contentType = 'audio/wav';
+        }
+
+
         //esta funcion retorna una promesa, primero creamos una variable
         //en la que tiene la referencia de la imagen y la url en la que se guarda en storgae
         //en este caso, rooms, messsages, el nombre del que lo creo y el timestamp
@@ -72,7 +85,7 @@ const actions = {
 
             //se retorna la promesa de storage.ref, que es una referencia a la imagen
             // enviamos el path imagenName y el archivo image(enviado desde createRoom)
-            return storage.ref(imageName).put(file)
+            return storage.ref(imageName).put(file, metadata)
         };
         //con esta funcion, usamos ref como respuesta de la promesa
         //esta lo retornamos con getDownloadURL, esta funcion esta en la documentacion y sirve
